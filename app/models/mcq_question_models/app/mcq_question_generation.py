@@ -74,16 +74,11 @@ class MCQGenerator():
         return questions
 
     def _generate_question_answer_pairs(self, context: str) -> List[Question]:
-        context_splits = self._smart_split_context(context)
-
+    
         questions = []
-
-        for split in context_splits:
-            answer, question = self.question_generator.generate_qna(split)
-            questions.append(Question(answer.capitalize(), question))
-
+        answer, question = self.question_generator.generate_qna(context)
+        questions.append(Question(answer.capitalize(), question))
         questions = list(toolz.unique(questions, key=lambda x: x.answerText))
-
         return questions
 
     def _generate_distractors(self, context: str, questions: List[Question]) -> List[Question]:
@@ -120,88 +115,6 @@ class MCQGenerator():
     
         return valid_questions
 
-
-    
-    def _split_context_according_to_desired_count(self, context: str, desired_count: int) -> List[str]:
-        sents = sent_tokenize(context)
-        sent_ratio = len(sents) / desired_count
-
-        context_splits = []
-
-        if sent_ratio < 1:
-            return sents
-        else:
-            take_sents_count = int(sent_ratio + 1)
-
-            start_sent_index = 0
-
-            while start_sent_index < len(sents):
-                context_split = ' '.join(sents[start_sent_index: start_sent_index + take_sents_count])
-                context_splits.append(context_split)
-                start_sent_index += take_sents_count - 1
-
-        return context_splits
-    def _smart_split_context(self, context: str) -> List[str]:
-        MIN_CHUNK_LENGTH = 100 
-        MAX_CHUNK_LENGTH = 500  # Maximum characters per chunk
-        
-        # First split by sentences
-        sentences = sent_tokenize(context)
-        
-        chunks = []
-        current_chunk = []
-        current_length = 0
-        
-        for sentence in sentences:
-            sentence_length = len(sentence)
-            
-            # If single sentence exceeds max length, split it
-            if sentence_length > MAX_CHUNK_LENGTH:
-                if current_chunk:
-                    chunks.append(' '.join(current_chunk))
-                    current_chunk = []
-                    current_length = 0
-                
-                # Split long sentence into smaller chunks while preserving meaning
-                words = sentence.split()
-                temp_chunk = []
-                temp_length = 0
-                
-                for word in words:
-                    if temp_length + len(word) > MAX_CHUNK_LENGTH:
-                        if temp_chunk:
-                            chunks.append(' '.join(temp_chunk))
-                        temp_chunk = [word]
-                        temp_length = len(word)
-                    else:
-                        temp_chunk.append(word)
-                        temp_length += len(word) + 1  # +1 for space
-                
-                if temp_chunk:
-                    chunks.append(' '.join(temp_chunk))
-                continue
-            
-            # Check if adding this sentence would exceed max length
-            if current_length + sentence_length > MAX_CHUNK_LENGTH:
-                if current_chunk:
-                    chunks.append(' '.join(current_chunk))
-                current_chunk = [sentence]
-                current_length = sentence_length
-            else:
-                current_chunk.append(sentence)
-                current_length += sentence_length
-            
-            # Check for natural break points (e.g., end of paragraph)
-            if sentence.strip().endswith('.') and current_length >= MIN_CHUNK_LENGTH:
-                chunks.append(' '.join(current_chunk))
-                current_chunk = []
-                current_length = 0
-        
-        # Add any remaining content
-        if current_chunk:
-            chunks.append(' '.join(current_chunk))
-        
-        return chunks
     def generate_tfidf_distractors(answer: str, context: str, num_distractors: int = 3) -> List[str]:
         vectorizer = TfidfVectorizer()
         words = context.split()

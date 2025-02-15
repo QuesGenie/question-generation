@@ -1,0 +1,30 @@
+----------------------------------------
+Question 1:
+Q1:  What type of communication technology is used in industrial model setup?
+Choices:
+  A) A UDPBased
+  B) NFC Match
+  C) A publishsubscribe
+Correct Answer: C. publish-subscribe
+----------------------------------------
+
+----------------------------------------
+Question 2:
+Q2:  What is available via NFC Match 1- CoAP?
+Choices:
+  A) Persistent connection between the client b and the server
+  B) UDPBased communication between the client b and the server
+  C) UDPBased communication between the client b
+Correct Answer: Persistent connection between the client b
+----------------------------------------
+
+----------------------------------------
+Question 3:
+Q3:  How many subnets is a network required to have?
+Choices:
+  A) 135
+  B) 2048
+  C) 255
+Correct Answer: 18
+----------------------------------------
+
