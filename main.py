@@ -32,3 +32,4 @@ if __name__ == '__main__':
         x.add_row([word, defn])
     display(Markdown("**Match the following words to their correct meanings.**"))
     print(x)
+    
