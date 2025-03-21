@@ -3,6 +3,7 @@ import random
 import json
 from prettytable import PrettyTable
 from IPython.display import Markdown, display
+from app.visual_qg.visual_question_generator import VisualQuestionGenerator 
 
 
 
@@ -32,3 +33,11 @@ if __name__ == '__main__':
         x.add_row([word, defn])
     display(Markdown("**Match the following words to their correct meanings.**"))
     print(x)
+    
+image_path = "chart1.jpg"
+
+vqg =VisualQuestionGenerator()
+vqg.process_inputs(image_path,"")
+question = vqg.generate_question(image_path)
+answer = vqg.generate_answer(image_path,question)
+print(question)
