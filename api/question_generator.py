@@ -2,6 +2,7 @@ import json
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from input_preprocessing.documents.utils.core import Chunk
 from typing import List
+from tqdm import tqdm
 
 class Question:
     def __init__(self, q_type, context, question, answer, source, page):
@@ -83,7 +84,7 @@ class QuestionGenerator:
 
     def generate_questions(self, chunks):
         questions = []
-        for chunk in chunks:
+        for chunk in tqdm(chunks):
             question= self._chunk_to_questions(chunk)
             if question:
                 questions.append(question)
