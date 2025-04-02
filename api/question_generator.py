@@ -75,7 +75,8 @@ class QuestionGenerator:
 
     def generate_questions(self, chunks):
         questions = []
-        for chunk in chunks:
+        print("Generating questions from text")
+        for chunk in tqdm(chunks):
             question= self._chunk_to_questions(chunk)
             if question:
                 questions.append(question)
@@ -108,15 +109,9 @@ class VisualQuestionGenerator:
         return self._generate_text(inputs, num_beams=10)
 
     def _generate_question(self, image_path):
-        print("here==============")
         input_text = "<image> Generate a question on this chart"
-        print("here==============1")
-
         inputs = self._process_inputs(image_path, input_text)
-        print("here==============2")
-
         question =self._generate_text(inputs)
-        print(f"question=========== {question}")
         return question
     
     def _generate_answer(self, image_path,question):
@@ -126,6 +121,7 @@ class VisualQuestionGenerator:
 
     def generate_visual_questions(self, images:Image):
         visual_questions=[]
+        print("Generating questions from images")
         for image in tqdm(images):
             description = self._generate_description(image.file_path)
             question = self._generate_question(image.file_path)
