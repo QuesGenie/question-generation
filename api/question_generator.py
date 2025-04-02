@@ -7,6 +7,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoProcessor, Pa
 from question_generation.api.question import Question
 from input_preprocessing.documents.utils.core import Chunk, ImageSource
 from typing import List
+from tqdm import tqdm
 
 class QuestionGenerator:
     def __init__(self, q_type):
