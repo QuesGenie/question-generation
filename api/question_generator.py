@@ -1,8 +1,11 @@
 import json
 from tkinter import Image
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from api.question import Question
-from input_preprocessing.documents.utils.core import Chunk
+from PIL import Image
+import torch
+from tqdm import tqdm
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoProcessor, PaliGemmaForConditionalGeneration
+from question_generation.api.question import Question
+from input_preprocessing.documents.utils.core import Chunk, ImageSource
 from typing import List
 from tqdm import tqdm
 
@@ -73,44 +76,63 @@ class QuestionGenerator:
 
     def generate_questions(self, chunks):
         questions = []
+        print("Generating questions from text")
         for chunk in tqdm(chunks):
             question= self._chunk_to_questions(chunk)
             if question:
                 questions.append(question)
         return questions
 
-# class VisualQuestionGenerator:
-#     def __init__(self, model, processor, device):
-#         self.model =  PaliGemmaForConditionalGeneration.from_pretrained("ahmed-masry/chartgemma")
-#         self.processor = AutoProcessor.from_pretrained("ahmed-masry/chartgemma")
-#         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+class VisualQuestionGenerator:
+    def __init__(self):
+        self.model =  PaliGemmaForConditionalGeneration.from_pretrained("ahmed-masry/chartgemma")
+        self.processor = AutoProcessor.from_pretrained("ahmed-masry/chartgemma")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-#     def process_inputs(self, image_path, input_text):
-#         image = Image.open(image_path).convert('RGB')
-#         inputs = self.processor(text=input_text, images=image, return_tensors="pt")
-#         inputs = {k: v.to(self.device) for k, v in inputs.items()}
-#         return inputs
+    def _process_inputs(self, image_path, input_text):
+        image = Image.open(image_path).convert('RGB')
+        inputs = self.processor(text=input_text, images=image, return_tensors="pt")
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        return inputs
 
-#     def generate_text(self, inputs, num_beams=4, max_new_tokens=512):
-#         prompt_length = inputs['input_ids'].shape[1]
-#         generate_ids = self.model.generate(**inputs, num_beams=num_beams, max_new_tokens=max_new_tokens)
-#         output_text = self.processor.batch_decode(
-#             generate_ids[:, prompt_length:], skip_special_tokens=True, clean_up_tokenization_spaces=False
-#         )[0]
-#         return output_text
+    def _generate_text(self, inputs, num_beams=4, max_new_tokens=512):
+        prompt_length = inputs['input_ids'].shape[1]
+        generate_ids = self.model.generate(**inputs, num_beams=num_beams, max_new_tokens=max_new_tokens)
+        output_text = self.processor.batch_decode(
+            generate_ids[:, prompt_length:], skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )[0]
+        return output_text
 
-#     def generate_description(self, image_path):
-#         input_text = "<image> generate a full description about this diagram"
-#         inputs = self.process_inputs(image_path, input_text)
-#         return self.generate_text(inputs, num_beams=10)
+    def _generate_description(self, image_path):
+        input_text = "<image> generate a full description about this diagram"
+        inputs = self._process_inputs(image_path, input_text)
+        return self._generate_text(inputs, num_beams=10)
 
-#     def generate_question(self, image_path):
-#         input_text = "<image> Generate a question on this image"
-#         inputs = self.process_inputs(image_path, input_text)
-#         return self.generate_text(inputs)
+    def _generate_question(self, image_path):
+        input_text = "<image> Generate a question on this chart"
+        inputs = self._process_inputs(image_path, input_text)
+        question =self._generate_text(inputs)
+        return question
     
-#     def generate_answer(self, image_path,question):
-#         input_text = f"<image> {question}"
-#         inputs = self.process_inputs(image_path, input_text)
-#         return self.generate_text(inputs)
+    def _generate_answer(self, image_path,question):
+        input_text = question
+        inputs = self._process_inputs(image_path, input_text)
+        return self._generate_text(inputs)
+
+    def generate_visual_questions(self, images:Image):
+        visual_questions=[]
+        print("Generating questions from images")
+        for image in tqdm(images):
+            description = self._generate_description(image.file_path)
+            question = self._generate_question(image.file_path)
+            answer = self._generate_answer(question)
+            
+            visual_questions.append(Question(q_type='visual',
+            context=image.file_path,
+            source=image.source,
+            page=image.page,
+            question=question,
+            answer=answer))
+
+        return visual_questions
