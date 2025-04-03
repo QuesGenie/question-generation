@@ -6,6 +6,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoProcessor, PaliGemmaForConditionalGeneration
 from question_generation.api.question import Question
 from input_preprocessing.documents.utils.core import Chunk, ImageSource
+from input_preprocessing.audio.app import AudioChunk
 from typing import List
 from tqdm import tqdm
 
@@ -63,9 +64,13 @@ class QuestionGenerator:
         question = Question(q_type=self.q_type,
         context=chunk.text,
         source=chunk.source,
-        page=chunk.page,
         question=None,
         answer=None)
+
+        if isinstance(chunk, Chunk):
+            question.page=chunk.page,
+        elif isinstance(chunk, AudioChunk):
+            question.timestamp=f"{chunk.start_time}:{chunk.end_time}"
 
         raw_question = self._generate_question(chunk.text)
         try:
@@ -77,7 +82,7 @@ class QuestionGenerator:
     def generate_questions(self, chunks):
         questions = []
         print("Generating questions from text")
-        for chunk in tqdm(chunks):
+        for chunk in tqdm(chunks, desc="Processing chunks", disable=False):
             question= self._chunk_to_questions(chunk)
             if question:
                 questions.append(question)
@@ -88,7 +93,6 @@ class VisualQuestionGenerator:
         self.model =  PaliGemmaForConditionalGeneration.from_pretrained("ahmed-masry/chartgemma")
         self.processor = AutoProcessor.from_pretrained("ahmed-masry/chartgemma")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
     def _process_inputs(self, image_path, input_text):
         image = Image.open(image_path).convert('RGB')
