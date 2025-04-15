@@ -17,7 +17,7 @@ class QuestionGenerator:
             self.model_name = "fares7elsadek/t5-base-finetuned-question-generation"
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
-        
+
     def _generate_question(self, context, answer="[MASK]", max_length=64):
         """
         Generates a question and answer pair from the provided context.
@@ -61,16 +61,23 @@ class QuestionGenerator:
         Returns:
             str: The generated question and answer pair.
         """
-        question = Question(q_type=self.q_type,
-        context=chunk.text,
-        source=chunk.source,
-        question=None,
-        answer=None)
+        question = Question(
+            q_type=self.q_type,
+            source=chunk.source,
+            context=chunk.text,
+            question=None,
+            answer=None,
+            loc=None,
+        )
 
-        if isinstance(chunk, Chunk):
-            question.page=chunk.page,
-        elif isinstance(chunk, AudioChunk):
-            question.timestamp=f"{chunk.start_time}:{chunk.end_time}"
+        if chunk.type == "audio":
+            question.contextLocation = f"{chunk.start}-{chunk.end}"  # timestamp
+        elif chunk.start == chunk.end:
+            question.contextLocation = chunk.start  # single page or slide
+        else:
+            question.contextLocation = (
+                f"{chunk.start}-{chunk.end}"  # page or slide range
+            )
 
         raw_question = self._generate_question(chunk.text)
         try:
@@ -118,25 +125,29 @@ class VisualQuestionGenerator:
         inputs = self._process_inputs(image_path, input_text)
         question =self._generate_text(inputs)
         return question
-    
+
     def _generate_answer(self, image_path,question):
         input_text = question
         inputs = self._process_inputs(image_path, input_text)
         return self._generate_text(inputs)
 
-    def generate_visual_questions(self, images:Image):
+    def generate_visual_questions(self, images: List[ImageSource]):
         visual_questions=[]
         print("Generating questions from images")
         for image in tqdm(images):
             description = self._generate_description(image.file_path)
             question = self._generate_question(image.file_path)
             answer = self._generate_answer(question)
-            
-            visual_questions.append(Question(q_type='visual',
-            context=image.file_path,
-            source=image.source,
-            page=image.page,
-            question=question,
-            answer=answer))
+
+            visual_questions.append(
+                Question(
+                    q_type="visual",
+                    context=image.file_path,
+                    source=image.source,
+                    loc=image.loc,
+                    question=question,
+                    answer=answer,
+                )
+            )
 
         return visual_questions
